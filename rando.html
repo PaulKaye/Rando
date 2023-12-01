@@ -76,7 +76,65 @@
 ];
 
             const RNGTokenAddress = '0x0fF7d192c21936275635253fb5f94F5e9B24bD02'; //RANDO Token (RNDO)
-
+	    const TokenABI = [
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "Rando",
+    "outputs": [
+      {
+        "name": "Rando",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "name": "balance",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "name": "RNDO",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  }
+];	
             const connectButton = document.getElementById('connectButton');
             const generateButton = document.getElementById('generateButton');
             const numbersList = document.getElementById('numbers');
