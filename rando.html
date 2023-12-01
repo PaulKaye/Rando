@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>RANDO: Psuedo-Random Number Generator for Polygon Blockchain</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/web3@1.3.3/dist/web3.min.js"></script>
+    </head>
+    <body>
+        <button id="connectButton">Connect Metamask</button>
+        <button id="generateButton">Generate Random Number</button>
+        <h2>Your Numbers</h2>
+        <ul id="numbers"></ul>
+        <script>
+            let web3;
+            let contract;
+            let userAddress;
+
+            const contractAddress = '0x82d31dbf928d9c5f5a9cd241e6e13f51635bef03';
+            const contractABI = [[
+	{
+		"inputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "_tokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "randomNumber",
+				"type": "uint256"
+			}
+		],
+		"name": "RandomNumberGenerated",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "generateRandomNumber",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "randoToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]];
+
+            const RNGTokenAddress = '0x0fF7d192c21936275635253fb5f94F5e9B24bD02'; //RANDO Token (RNDO)
+
+            const connectButton = document.getElementById('connectButton');
+            const generateButton = document.getElementById('generateButton');
+            const numbersList = document.getElementById('numbers');
+
+            connectButton.onclick = async () => {
+                if (window.ethereum) {
+                    window.web3 = new Web3(window.ethereum);
+
+                    web3 = window.web3;
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+
+                    const accounts = await ethereum.enable();
+
+                    userAddress = accounts[0];
+                    fetchAndDisplayNumbers();
+                } else {
+                    alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
+                }
+            };
+
+            generateButton.onclick = async () => {
+                if (web3 && contract && userAddress) {
+                    try {
+                        // Approve the smart contract to spend 1 RANDO
+                        const randoTokenContract = new web3.eth.Contract(tokenABI, RNGTokenAddress);
+                        await randoTokenContract.methods.approve(contractAddress, web3.utils.toWei('1')).send({ from: userAddress });
+
+                        // Call the smart contract function
+                        contract.methods.generateRandomNumber().send({ from: userAddress })
+                            .on('transactionHash', function(hash){
+                                console.log('transactionHash', hash);
+                            })
+                            .on('confirmation', function(confirmationNumber, receipt){
+                                if(receipt.status){
+                                    // we have to manually call the event due to a web3 limitation
+                                    contract.getPastEvents('RandomNumberGenerated', {
+                                        filter: {player: userAddress},
+                                        fromBlock: receipt.blockNumber,
+                                        toBlock: 'latest'
+                                    }, function(error, events){
+                                        if(!error) {
+                                            fetchAndDisplayNumbers();
+                                        } else {
+                                            console.log('Error while fetching the events', error);
+                                        }
+                                    });
+                                } else {
+                                    alert('Transaction failed.');
+                                    fetchAndDisplayNumbers();
+                                }
+                            })
+                            .on('error', console.error);
+
+                    } catch (err) {
+                        console.error('Error: ', err);
+                    }
+                } else {
+                    alert('Please connect to MetaMask first.');
+                }
+            };
+
+            const fetchAndDisplayNumbers = async () => {
+                const pastEvents = await contract.getPastEvents('RandomNumberGenerated', {
+                    filter: {player: userAddress},
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                });
+
+                // Deleting old numbers
+                while (numbersList.firstChild) {
+                    numbersList.removeChild(numbersList.firstChild);
+                }
+
+                pastEvents.forEach((event) => {
+                    const number = event.returnValues.randomNumber;
+                    const item = document.createElement('li');
+                    item.textContent = `Random number: ${number}`;
+                    numbersList.appendChild(item);
+                });
+            }
+        </script>
+    </body>
+</html>
